@@ -106,8 +106,8 @@ func (c *DriveLsCmd) Run(ctx context.Context, flags *RootFlags) error {
 
 	q := buildDriveListQuery(folderID, c.Query)
 
+	// Include files from shared drives, not just personal "My Drive"
 	call := svc.Files.List().
-		// Include files from shared drives, not just personal "My Drive"
 		Q(q).
 		PageSize(c.Max).
 		PageToken(c.Page).

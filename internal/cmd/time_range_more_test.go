@@ -161,8 +161,6 @@ func TestGetUserTimezoneInvalid(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 }
-<<<<<<< HEAD
-
 func TestResolveTimeRangeWithDefaultsToTomorrowEndOfDay(t *testing.T) {
 	svc := newCalendarServiceWithTimezone(t, "UTC")
 	flags := TimeRangeFlags{
