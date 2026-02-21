@@ -35,7 +35,8 @@ func (c *GmailLabelsGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	idMap, err := fetchLabelNameToID(svc)
+	userID := gmailUserID(flags)
+	idMap, err := fetchLabelNameToID(svc, userID)
 	if err != nil {
 		return err
 	}
@@ -48,7 +49,7 @@ func (c *GmailLabelsGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		id = v
 	}
 
-	l, err := svc.Users.Labels.Get("me", id).Context(ctx).Do()
+	l, err := svc.Users.Labels.Get(userID, id).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -87,12 +88,13 @@ func (c *GmailLabelsCreateCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	err = ensureLabelNameAvailable(svc, name)
+	userID := gmailUserID(flags)
+	err = ensureLabelNameAvailable(svc, userID, name)
 	if err != nil {
 		return err
 	}
 
-	label, err := createLabel(ctx, svc, name)
+	label, err := createLabel(ctx, svc, userID, name)
 	if err != nil {
 		return mapLabelCreateError(err, name)
 	}
@@ -104,8 +106,8 @@ func (c *GmailLabelsCreateCmd) Run(ctx context.Context, flags *RootFlags) error 
 	return nil
 }
 
-func createLabel(ctx context.Context, svc *gmail.Service, name string) (*gmail.Label, error) {
-	return svc.Users.Labels.Create("me", &gmail.Label{
+func createLabel(ctx context.Context, svc *gmail.Service, userID, name string) (*gmail.Label, error) {
+	return svc.Users.Labels.Create(userID, &gmail.Label{
 		Name:                  name,
 		LabelListVisibility:   "labelShow",
 		MessageListVisibility: "show",
@@ -126,7 +128,8 @@ func (c *GmailLabelsListCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	resp, err := svc.Users.Labels.List("me").Context(ctx).Do()
+	userID := gmailUserID(flags)
+	resp, err := svc.Users.Labels.List(userID).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -171,7 +174,8 @@ func (c *GmailLabelsModifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	idMap, err := fetchLabelNameToID(svc)
+	userID := gmailUserID(flags)
+	idMap, err := fetchLabelNameToID(svc, userID)
 	if err != nil {
 		return err
 	}
@@ -187,7 +191,7 @@ func (c *GmailLabelsModifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 	results := make([]result, 0, len(threadIDs))
 
 	for _, tid := range threadIDs {
-		_, err := svc.Users.Threads.Modify("me", tid, &gmail.ModifyThreadRequest{
+		_, err := svc.Users.Threads.Modify(userID, tid, &gmail.ModifyThreadRequest{
 			AddLabelIds:    addIDs,
 			RemoveLabelIds: removeIDs,
 		}).Context(ctx).Do()
@@ -209,8 +213,8 @@ func (c *GmailLabelsModifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 	return nil
 }
 
-func fetchLabelNameToID(svc *gmail.Service) (map[string]string, error) {
-	resp, err := svc.Users.Labels.List("me").Do()
+func fetchLabelNameToID(svc *gmail.Service, userID string) (map[string]string, error) {
+	resp, err := svc.Users.Labels.List(userID).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -227,8 +231,8 @@ func fetchLabelNameToID(svc *gmail.Service) (map[string]string, error) {
 	return m, nil
 }
 
-func fetchLabelNameOnlyToID(svc *gmail.Service) (map[string]string, error) {
-	resp, err := svc.Users.Labels.List("me").Do()
+func fetchLabelNameOnlyToID(svc *gmail.Service, userID string) (map[string]string, error) {
+	resp, err := svc.Users.Labels.List(userID).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -263,14 +267,15 @@ func (c *GmailLabelsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return usage("empty label")
 	}
 
+	userID := gmailUserID(flags)
 	// For destructive operations, try exact ID match first before name lookup.
-	label, err := svc.Users.Labels.Get("me", raw).Context(ctx).Do()
+	label, err := svc.Users.Labels.Get(userID, raw).Context(ctx).Do()
 	if err != nil {
 		if !isNotFoundAPIError(err) {
 			return err
 		}
 		// Exact ID not found; resolve by label name only.
-		idMap, mapErr := fetchLabelNameOnlyToID(svc)
+		idMap, mapErr := fetchLabelNameOnlyToID(svc, userID)
 		if mapErr != nil {
 			return mapErr
 		}
@@ -278,7 +283,7 @@ func (c *GmailLabelsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error 
 		if !ok {
 			return fmt.Errorf("label not found: %s", raw)
 		}
-		label, err = svc.Users.Labels.Get("me", id).Context(ctx).Do()
+		label, err = svc.Users.Labels.Get(userID, id).Context(ctx).Do()
 		if err != nil {
 			return err
 		}
@@ -293,7 +298,7 @@ func (c *GmailLabelsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return confirmErr
 	}
 
-	if err := svc.Users.Labels.Delete("me", label.Id).Context(ctx).Do(); err != nil {
+	if err := svc.Users.Labels.Delete(userID, label.Id).Context(ctx).Do(); err != nil {
 		return err
 	}
 
@@ -304,8 +309,8 @@ func (c *GmailLabelsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error 
 	)
 }
 
-func fetchLabelIDToName(svc *gmail.Service) (map[string]string, error) {
-	resp, err := svc.Users.Labels.List("me").Do()
+func fetchLabelIDToName(svc *gmail.Service, userID string) (map[string]string, error) {
+	resp, err := svc.Users.Labels.List(userID).Do()
 	if err != nil {
 		return nil, err
 	}

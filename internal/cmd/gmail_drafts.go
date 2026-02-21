@@ -42,8 +42,9 @@ func (c *GmailDraftsListCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	fetch := func(pageToken string) ([]*gmail.Draft, string, error) {
-		call := svc.Users.Drafts.List("me").MaxResults(c.Max).Context(ctx)
+		call := svc.Users.Drafts.List(userID).MaxResults(c.Max).Context(ctx)
 		if strings.TrimSpace(pageToken) != "" {
 			call = call.PageToken(pageToken)
 		}
@@ -138,7 +139,8 @@ func (c *GmailDraftsGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	draft, err := svc.Users.Drafts.Get("me", draftID).Format("full").Do()
+	userID := gmailUserID(flags)
+	draft, err := svc.Users.Drafts.Get(userID, draftID).Format("full").Do()
 	if err != nil {
 		return err
 	}
@@ -158,7 +160,7 @@ func (c *GmailDraftsGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 			if err != nil {
 				return err
 			}
-			downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, collectAttachments(msg.Payload), attachDir)
+			downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, collectAttachments(msg.Payload), attachDir, userID)
 			if err != nil {
 				return err
 			}
@@ -189,7 +191,7 @@ func (c *GmailDraftsGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		if err != nil {
 			return err
 		}
-		downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, attachments, attachDir)
+		downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, attachments, attachDir, userID)
 		if err != nil {
 			return err
 		}
@@ -230,7 +232,8 @@ func (c *GmailDraftsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	if err := svc.Users.Drafts.Delete("me", draftID).Do(); err != nil {
+	userID := gmailUserID(flags)
+	if err := svc.Users.Drafts.Delete(userID, draftID).Do(); err != nil {
 		return err
 	}
 	return writeResult(ctx, u,
@@ -266,7 +269,8 @@ func (c *GmailDraftsSendCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	msg, err := svc.Users.Drafts.Send("me", &gmail.Draft{Id: draftID}).Do()
+	userID := gmailUserID(flags)
+	msg, err := svc.Users.Drafts.Send(userID, &gmail.Draft{Id: draftID}).Do()
 	if err != nil {
 		return err
 	}
@@ -321,10 +325,10 @@ func (c draftComposeInput) validate() error {
 	return nil
 }
 
-func buildDraftMessage(ctx context.Context, svc *gmail.Service, account string, input draftComposeInput) (*gmail.Message, string, error) {
+func buildDraftMessage(ctx context.Context, svc *gmail.Service, account, userID string, input draftComposeInput) (*gmail.Message, string, error) {
 	fromAddr := account
 	if strings.TrimSpace(input.From) != "" {
-		sa, err := svc.Users.Settings.SendAs.Get("me", input.From).Context(ctx).Do()
+		sa, err := svc.Users.Settings.SendAs.Get(userID, input.From).Context(ctx).Do()
 		if err != nil {
 			return nil, "", fmt.Errorf("invalid --from address %q: %w", input.From, err)
 		}
@@ -337,7 +341,7 @@ func buildDraftMessage(ctx context.Context, svc *gmail.Service, account string, 
 		}
 	}
 
-	info, err := fetchReplyInfo(ctx, svc, input.ReplyToMessageID, input.ReplyToThreadID, false)
+	info, err := fetchReplyInfo(ctx, svc, input.ReplyToMessageID, input.ReplyToThreadID, false, userID)
 	if err != nil {
 		return nil, "", err
 	}
@@ -462,12 +466,13 @@ func (c *GmailDraftsCreateCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	msg, threadID, err := buildDraftMessage(ctx, svc, account, input)
+	userID := gmailUserID(flags)
+	msg, threadID, err := buildDraftMessage(ctx, svc, account, userID, input)
 	if err != nil {
 		return err
 	}
 
-	draft, err := svc.Users.Drafts.Create("me", &gmail.Draft{Message: msg}).Do()
+	draft, err := svc.Users.Drafts.Create(userID, &gmail.Draft{Message: msg}).Do()
 	if err != nil {
 		return err
 	}
@@ -562,10 +567,11 @@ func (c *GmailDraftsUpdateCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	existingThreadID := ""
 	existingTo := ""
 	if !toWasSet || strings.TrimSpace(replyToMessageID) == "" {
-		existing, fetchErr := svc.Users.Drafts.Get("me", draftID).Format("full").Do()
+		existing, fetchErr := svc.Users.Drafts.Get(userID, draftID).Format("full").Do()
 		if fetchErr != nil {
 			return fetchErr
 		}
@@ -588,12 +594,12 @@ func (c *GmailDraftsUpdateCmd) Run(ctx context.Context, flags *RootFlags) error 
 	input.To = to
 	input.ReplyToThreadID = replyToThreadID
 
-	msg, threadID, err := buildDraftMessage(ctx, svc, account, input)
+	msg, threadID, err := buildDraftMessage(ctx, svc, account, userID, input)
 	if err != nil {
 		return err
 	}
 
-	draft, err := svc.Users.Drafts.Update("me", draftID, &gmail.Draft{Id: draftID, Message: msg}).Do()
+	draft, err := svc.Users.Drafts.Update(userID, draftID, &gmail.Draft{Id: draftID, Message: msg}).Do()
 	if err != nil {
 		return err
 	}

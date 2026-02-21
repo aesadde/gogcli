@@ -35,7 +35,8 @@ func (c *GmailFiltersListCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	resp, err := svc.Users.Settings.Filters.List("me").Do()
+	userID := gmailUserID(flags)
+	resp, err := svc.Users.Settings.Filters.List(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,8 @@ func (c *GmailFiltersGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if filterID == "" {
 		return usage("empty filterId")
 	}
-	filter, err := svc.Users.Settings.Filters.Get("me", filterID).Do()
+	userID := gmailUserID(flags)
+	filter, err := svc.Users.Settings.Filters.Get(userID, filterID).Do()
 	if err != nil {
 		return err
 	}
@@ -212,6 +214,7 @@ func (c *GmailFiltersCreateCmd) Run(ctx context.Context, flags *RootFlags) error
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	// Build filter criteria
 	criteria := &gmail.FilterCriteria{}
 	if c.From != "" {
@@ -236,7 +239,7 @@ func (c *GmailFiltersCreateCmd) Run(ctx context.Context, flags *RootFlags) error
 	// Resolve label names to IDs for add/remove operations
 	var labelMap map[string]string
 	if c.AddLabel != "" || c.RemoveLabel != "" {
-		labelMap, err = fetchLabelNameToID(svc)
+		labelMap, err = fetchLabelNameToID(svc, userID)
 		if err != nil {
 			return err
 		}
@@ -311,7 +314,7 @@ func (c *GmailFiltersCreateCmd) Run(ctx context.Context, flags *RootFlags) error
 		Action:   action,
 	}
 
-	created, err := svc.Users.Settings.Filters.Create("me", filter).Do()
+	created, err := svc.Users.Settings.Filters.Create(userID, filter).Do()
 	if err != nil {
 		return err
 	}
@@ -365,7 +368,8 @@ func (c *GmailFiltersDeleteCmd) Run(ctx context.Context, flags *RootFlags) error
 		return err
 	}
 
-	err = svc.Users.Settings.Filters.Delete("me", filterID).Do()
+	userID := gmailUserID(flags)
+	err = svc.Users.Settings.Filters.Delete(userID, filterID).Do()
 	if err != nil {
 		return err
 	}

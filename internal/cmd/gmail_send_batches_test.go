@@ -67,7 +67,7 @@ func TestSendGmailBatches_WithTracking(t *testing.T) {
 		BodyHTML:    "<html><body>Hi</body></html>",
 		Track:       true,
 		TrackingCfg: cfg,
-	}, batches)
+	}, batches, "me")
 	if err != nil {
 		t.Fatalf("sendGmailBatches: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestReplyHeaders_Message(t *testing.T) {
 		t.Fatalf("NewService: %v", err)
 	}
 
-	inReplyTo, references, threadID, err := replyHeaders(context.Background(), svc, "m1")
+	inReplyTo, references, threadID, err := replyHeaders(context.Background(), svc, "m1", "me")
 	if err != nil {
 		t.Fatalf("replyHeaders: %v", err)
 	}

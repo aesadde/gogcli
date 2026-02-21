@@ -18,6 +18,16 @@ import (
 
 var newGmailService = googleapi.NewGmail
 
+// gmailUserID returns the Gmail userId to use for API calls.
+// When --as is specified (delegate access), it returns that value.
+// Otherwise it returns "me" (the authenticated user), which is the Gmail API default.
+func gmailUserID(flags *RootFlags) string {
+	if flags != nil && strings.TrimSpace(flags.GmailAs) != "" {
+		return strings.TrimSpace(flags.GmailAs)
+	}
+	return "me"
+}
+
 type GmailCmd struct {
 	Search     GmailSearchCmd     `cmd:"" name:"search" aliases:"find,query,ls,list" group:"Read" help:"Search threads using Gmail query syntax"`
 	Messages   GmailMessagesCmd   `cmd:"" name:"messages" aliases:"message,msg,msgs" group:"Read" help:"Message operations"`
@@ -83,8 +93,9 @@ func (c *GmailSearchCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	fetch := func(pageToken string) ([]*gmail.Thread, string, error) {
-		call := svc.Users.Threads.List("me").
+		call := svc.Users.Threads.List(userID).
 			Q(query).
 			MaxResults(c.Max).
 			Context(ctx)
@@ -129,7 +140,7 @@ func (c *GmailSearchCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return failEmptyExit(c.FailEmpty)
 	}
 
-	idToName, err := fetchLabelIDToName(svc)
+	idToName, err := fetchLabelIDToName(svc, userID)
 	if err != nil {
 		return err
 	}
@@ -140,7 +151,7 @@ func (c *GmailSearchCmd) Run(ctx context.Context, flags *RootFlags) error {
 	}
 
 	// Fetch thread details concurrently (fixes N+1 query pattern)
-	items, err := fetchThreadDetails(ctx, svc, threads, idToName, c.Oldest, loc)
+	items, err := fetchThreadDetails(ctx, svc, threads, idToName, c.Oldest, loc, userID)
 	if err != nil {
 		return err
 	}
@@ -377,7 +388,7 @@ type threadItem struct {
 // This eliminates N+1 queries by fetching all threads in parallel.
 // When oldest is false (default), the date shown is from the last message in the thread.
 // When oldest is true, the date shown is from the first message in the thread.
-func fetchThreadDetails(ctx context.Context, svc *gmail.Service, threads []*gmail.Thread, idToName map[string]string, oldest bool, loc *time.Location) ([]threadItem, error) {
+func fetchThreadDetails(ctx context.Context, svc *gmail.Service, threads []*gmail.Thread, idToName map[string]string, oldest bool, loc *time.Location, userID string) ([]threadItem, error) {
 	if len(threads) == 0 {
 		return nil, nil
 	}
@@ -412,7 +423,7 @@ func fetchThreadDetails(ctx context.Context, svc *gmail.Service, threads []*gmai
 				return
 			}
 
-			thread, err := svc.Users.Threads.Get("me", threadID).
+			thread, err := svc.Users.Threads.Get(userID, threadID).
 				Format("metadata").
 				MetadataHeaders("From", "Subject", "Date").
 				Context(ctx).
@@ -475,7 +486,7 @@ func fetchThreadDetails(ctx context.Context, svc *gmail.Service, threads []*gmai
 			if t.Id == "" {
 				continue
 			}
-			_, err := svc.Users.Threads.Get("me", t.Id).
+			_, err := svc.Users.Threads.Get(userID, t.Id).
 				Format("metadata").
 				MetadataHeaders("From", "Subject", "Date").
 				Context(ctx).

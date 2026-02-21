@@ -48,7 +48,8 @@ func (c *GmailBatchDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	err = svc.Users.Messages.BatchDelete("me", &gmail.BatchDeleteMessagesRequest{
+	userID := gmailUserID(flags)
+	err = svc.Users.Messages.BatchDelete(userID, &gmail.BatchDeleteMessagesRequest{
 		Ids: ids,
 	}).Do()
 	if err != nil {
@@ -109,7 +110,8 @@ func (c *GmailBatchModifyCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	idMap, err := fetchLabelNameToID(svc)
+	userID := gmailUserID(flags)
+	idMap, err := fetchLabelNameToID(svc, userID)
 	if err != nil {
 		return err
 	}
@@ -117,7 +119,7 @@ func (c *GmailBatchModifyCmd) Run(ctx context.Context, flags *RootFlags) error {
 	addIDs := resolveLabelIDs(addLabels, idMap)
 	removeIDs := resolveLabelIDs(removeLabels, idMap)
 
-	err = svc.Users.Messages.BatchModify("me", &gmail.BatchModifyMessagesRequest{
+	err = svc.Users.Messages.BatchModify(userID, &gmail.BatchModifyMessagesRequest{
 		Ids:            ids,
 		AddLabelIds:    addIDs,
 		RemoveLabelIds: removeIDs,

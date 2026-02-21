@@ -45,8 +45,9 @@ func (c *GmailMessagesSearchCmd) Run(ctx context.Context, flags *RootFlags) erro
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	fetch := func(pageToken string) ([]*gmail.Message, string, error) {
-		call := svc.Users.Messages.List("me").
+		call := svc.Users.Messages.List(userID).
 			Q(query).
 			MaxResults(c.Max).
 			Fields("messages(id,threadId),nextPageToken").
@@ -92,7 +93,7 @@ func (c *GmailMessagesSearchCmd) Run(ctx context.Context, flags *RootFlags) erro
 		return failEmptyExit(c.FailEmpty)
 	}
 
-	idToName, err := fetchLabelIDToName(svc)
+	idToName, err := fetchLabelIDToName(svc, userID)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func (c *GmailMessagesSearchCmd) Run(ctx context.Context, flags *RootFlags) erro
 		return err
 	}
 
-	items, err := fetchMessageDetails(ctx, svc, messages, idToName, loc, c.IncludeBody)
+	items, err := fetchMessageDetails(ctx, svc, messages, idToName, loc, c.IncludeBody, userID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ type messageItem struct {
 	Body     string   `json:"body,omitempty"`
 }
 
-func fetchMessageDetails(ctx context.Context, svc *gmail.Service, messages []*gmail.Message, idToName map[string]string, loc *time.Location, includeBody bool) ([]messageItem, error) {
+func fetchMessageDetails(ctx context.Context, svc *gmail.Service, messages []*gmail.Message, idToName map[string]string, loc *time.Location, includeBody bool, userID string) ([]messageItem, error) {
 	if len(messages) == 0 {
 		return nil, nil
 	}
@@ -192,7 +193,7 @@ func fetchMessageDetails(ctx context.Context, svc *gmail.Service, messages []*gm
 				return
 			}
 
-			call := svc.Users.Messages.Get("me", messageID)
+			call := svc.Users.Messages.Get(userID, messageID)
 			if includeBody {
 				call = call.Format("full")
 			} else {

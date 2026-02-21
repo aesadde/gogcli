@@ -36,9 +36,10 @@ func (c *GmailHistoryCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	historyID := ""
 	fetch := func(pageToken string) ([]string, string, error) {
-		call := svc.Users.History.List("me").StartHistoryId(startID).MaxResults(c.Max)
+		call := svc.Users.History.List(userID).StartHistoryId(startID).MaxResults(c.Max)
 		call.HistoryTypes("messageAdded")
 		if strings.TrimSpace(pageToken) != "" {
 			call = call.PageToken(pageToken)

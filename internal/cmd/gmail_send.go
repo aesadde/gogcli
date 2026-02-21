@@ -142,7 +142,8 @@ func (c *GmailSendCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	sendAsList, sendAsListErr := listSendAs(ctx, svc)
+	userID := gmailUserID(flags)
+	sendAsList, sendAsListErr := listSendAs(ctx, svc, userID)
 
 	// Determine the From address
 	fromAddr := account
@@ -158,7 +159,7 @@ func (c *GmailSendCmd) Run(ctx context.Context, flags *RootFlags) error {
 		} else {
 			// Fallback: preserve legacy behavior if we cannot list settings.
 			var getErr error
-			sa, getErr = svc.Users.Settings.SendAs.Get("me", fromEmail).Context(ctx).Do()
+			sa, getErr = svc.Users.Settings.SendAs.Get(userID, fromEmail).Context(ctx).Do()
 			if getErr != nil {
 				return fmt.Errorf("invalid --from address %q: %w", fromEmail, getErr)
 			}
@@ -187,7 +188,7 @@ func (c *GmailSendCmd) Run(ctx context.Context, flags *RootFlags) error {
 	}
 
 	// Fetch reply info (includes recipient headers for reply-all, and body for quoting)
-	replyInfo, err := fetchReplyInfo(ctx, svc, replyToMessageID, threadID, c.Quote)
+	replyInfo, err := fetchReplyInfo(ctx, svc, replyToMessageID, threadID, c.Quote, userID)
 	if err != nil {
 		return err
 	}
@@ -240,7 +241,7 @@ func (c *GmailSendCmd) Run(ctx context.Context, flags *RootFlags) error {
 		Attachments: atts,
 		Track:       c.Track,
 		TrackingCfg: trackingCfg,
-	}, batches)
+	}, batches, userID)
 	if err != nil {
 		return err
 	}
@@ -269,11 +270,11 @@ func (c *GmailSendCmd) resolveTrackingConfig(account string, toRecipients, ccRec
 	return trackingCfg, nil
 }
 
-func listSendAs(ctx context.Context, svc *gmail.Service) ([]*gmail.SendAs, error) {
+func listSendAs(ctx context.Context, svc *gmail.Service, userID string) ([]*gmail.SendAs, error) {
 	if svc == nil {
 		return nil, nil
 	}
-	resp, err := svc.Users.Settings.SendAs.List("me").Context(ctx).Do()
+	resp, err := svc.Users.Settings.SendAs.List(userID).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +347,7 @@ func buildSendBatches(toRecipients, ccRecipients, bccRecipients []string, track,
 	}}
 }
 
-func sendGmailBatches(ctx context.Context, svc *gmail.Service, opts sendMessageOptions, batches []sendBatch) ([]sendResult, error) {
+func sendGmailBatches(ctx context.Context, svc *gmail.Service, opts sendMessageOptions, batches []sendBatch, userID string) ([]sendResult, error) {
 	reply := replyInfo{}
 	if opts.ReplyInfo != nil {
 		reply = *opts.ReplyInfo
@@ -396,7 +397,7 @@ func sendGmailBatches(ctx context.Context, svc *gmail.Service, opts sendMessageO
 			msg.ThreadId = reply.ThreadID
 		}
 
-		sent, err := svc.Users.Messages.Send("me", msg).Context(ctx).Do()
+		sent, err := svc.Users.Messages.Send(userID, msg).Context(ctx).Do()
 		if err != nil {
 			return nil, err
 		}
@@ -559,15 +560,15 @@ type replyInfo struct {
 	BodyHTML    string   // Original message HTML body (for quoting with formatting)
 }
 
-func replyHeaders(ctx context.Context, svc *gmail.Service, replyToMessageID string) (inReplyTo string, references string, threadID string, err error) {
-	info, err := fetchReplyInfo(ctx, svc, replyToMessageID, "", false)
+func replyHeaders(ctx context.Context, svc *gmail.Service, replyToMessageID, userID string) (inReplyTo string, references string, threadID string, err error) {
+	info, err := fetchReplyInfo(ctx, svc, replyToMessageID, "", false, userID)
 	if err != nil {
 		return "", "", "", err
 	}
 	return info.InReplyTo, info.References, info.ThreadID, nil
 }
 
-func fetchReplyInfo(ctx context.Context, svc *gmail.Service, replyToMessageID string, threadID string, includeQuoteBodies bool) (*replyInfo, error) {
+func fetchReplyInfo(ctx context.Context, svc *gmail.Service, replyToMessageID string, threadID string, includeQuoteBodies bool, userID string) (*replyInfo, error) {
 	replyToMessageID = strings.TrimSpace(replyToMessageID)
 	threadID = strings.TrimSpace(threadID)
 	if replyToMessageID == "" && threadID == "" {
@@ -575,7 +576,7 @@ func fetchReplyInfo(ctx context.Context, svc *gmail.Service, replyToMessageID st
 	}
 
 	if replyToMessageID != "" {
-		msg, err := fetchMessageForReplyInfo(ctx, svc, replyToMessageID, includeQuoteBodies)
+		msg, err := fetchMessageForReplyInfo(ctx, svc, replyToMessageID, includeQuoteBodies, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -585,7 +586,7 @@ func fetchReplyInfo(ctx context.Context, svc *gmail.Service, replyToMessageID st
 	// For thread replies, we always need just headers to select the latest message.
 	// If includeQuoteBodies is true (quoting), fetch that single message in "full" format afterwards
 	// to avoid pulling entire thread bodies.
-	thread, err := fetchThreadForReplyInfo(ctx, svc, threadID)
+	thread, err := fetchThreadForReplyInfo(ctx, svc, threadID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -599,7 +600,7 @@ func fetchReplyInfo(ctx context.Context, svc *gmail.Service, replyToMessageID st
 	}
 	// If quoting, refetch the selected message in full format to get body parts.
 	if includeQuoteBodies && msg.Id != "" {
-		fullMsg, fullErr := fetchMessageForReplyInfo(ctx, svc, msg.Id, true)
+		fullMsg, fullErr := fetchMessageForReplyInfo(ctx, svc, msg.Id, true, userID)
 		if fullErr == nil && fullMsg != nil {
 			msg = fullMsg
 		}
@@ -614,8 +615,8 @@ func fetchReplyInfo(ctx context.Context, svc *gmail.Service, replyToMessageID st
 
 var replyInfoMetadataHeaders = []string{"Message-ID", "Message-Id", "References", "In-Reply-To", "From", "Reply-To", "To", "Cc", "Date"}
 
-func fetchMessageForReplyInfo(ctx context.Context, svc *gmail.Service, messageID string, includeQuoteBodies bool) (*gmail.Message, error) {
-	call := svc.Users.Messages.Get("me", messageID).Context(ctx)
+func fetchMessageForReplyInfo(ctx context.Context, svc *gmail.Service, messageID string, includeQuoteBodies bool, userID string) (*gmail.Message, error) {
+	call := svc.Users.Messages.Get(userID, messageID).Context(ctx)
 	if includeQuoteBodies {
 		call = call.Format(gmailFormatFull)
 	} else {
@@ -624,8 +625,8 @@ func fetchMessageForReplyInfo(ctx context.Context, svc *gmail.Service, messageID
 	return call.Do()
 }
 
-func fetchThreadForReplyInfo(ctx context.Context, svc *gmail.Service, threadID string) (*gmail.Thread, error) {
-	return svc.Users.Threads.Get("me", threadID).
+func fetchThreadForReplyInfo(ctx context.Context, svc *gmail.Service, threadID string, userID string) (*gmail.Thread, error) {
+	return svc.Users.Threads.Get(userID, threadID).
 		Format(gmailFormatMetadata).
 		MetadataHeaders(replyInfoMetadataHeaders...).
 		Context(ctx).

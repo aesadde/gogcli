@@ -34,7 +34,8 @@ func (c *GmailDelegatesListCmd) Run(ctx context.Context, flags *RootFlags) error
 		return err
 	}
 
-	resp, err := svc.Users.Settings.Delegates.List("me").Do()
+	userID := gmailUserID(flags)
+	resp, err := svc.Users.Settings.Delegates.List(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,8 @@ func (c *GmailDelegatesGetCmd) Run(ctx context.Context, flags *RootFlags) error 
 	if delegateEmail == "" {
 		return usage("empty delegateEmail")
 	}
-	delegate, err := svc.Users.Settings.Delegates.Get("me", delegateEmail).Do()
+	userID := gmailUserID(flags)
+	delegate, err := svc.Users.Settings.Delegates.Get(userID, delegateEmail).Do()
 	if err != nil {
 		return err
 	}
@@ -124,7 +126,8 @@ func (c *GmailDelegatesAddCmd) Run(ctx context.Context, flags *RootFlags) error 
 		DelegateEmail: delegateEmail,
 	}
 
-	created, err := svc.Users.Settings.Delegates.Create("me", delegate).Do()
+	userID := gmailUserID(flags)
+	created, err := svc.Users.Settings.Delegates.Create(userID, delegate).Do()
 	if err != nil {
 		return err
 	}
@@ -165,7 +168,8 @@ func (c *GmailDelegatesRemoveCmd) Run(ctx context.Context, flags *RootFlags) err
 		return err
 	}
 
-	err = svc.Users.Settings.Delegates.Delete("me", delegateEmail).Do()
+	userID := gmailUserID(flags)
+	err = svc.Users.Settings.Delegates.Delete(userID, delegateEmail).Do()
 	if err != nil {
 		return err
 	}

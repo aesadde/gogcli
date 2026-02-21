@@ -34,7 +34,8 @@ func (c *GmailForwardingListCmd) Run(ctx context.Context, flags *RootFlags) erro
 		return err
 	}
 
-	resp, err := svc.Users.Settings.ForwardingAddresses.List("me").Do()
+	userID := gmailUserID(flags)
+	resp, err := svc.Users.Settings.ForwardingAddresses.List(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,8 @@ func (c *GmailForwardingGetCmd) Run(ctx context.Context, flags *RootFlags) error
 	if forwardingEmail == "" {
 		return usage("empty forwardingEmail")
 	}
-	address, err := svc.Users.Settings.ForwardingAddresses.Get("me", forwardingEmail).Do()
+	userID := gmailUserID(flags)
+	address, err := svc.Users.Settings.ForwardingAddresses.Get(userID, forwardingEmail).Do()
 	if err != nil {
 		return err
 	}
@@ -124,7 +126,8 @@ func (c *GmailForwardingCreateCmd) Run(ctx context.Context, flags *RootFlags) er
 		ForwardingEmail: forwardingEmail,
 	}
 
-	created, err := svc.Users.Settings.ForwardingAddresses.Create("me", address).Do()
+	userID := gmailUserID(flags)
+	created, err := svc.Users.Settings.ForwardingAddresses.Create(userID, address).Do()
 	if err != nil {
 		return err
 	}
@@ -166,7 +169,8 @@ func (c *GmailForwardingDeleteCmd) Run(ctx context.Context, flags *RootFlags) er
 		return err
 	}
 
-	err = svc.Users.Settings.ForwardingAddresses.Delete("me", forwardingEmail).Do()
+	userID := gmailUserID(flags)
+	err = svc.Users.Settings.ForwardingAddresses.Delete(userID, forwardingEmail).Do()
 	if err != nil {
 		return err
 	}

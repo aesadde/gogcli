@@ -32,7 +32,8 @@ func (c *GmailVacationGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	vacation, err := svc.Users.Settings.GetVacation("me").Do()
+	userID := gmailUserID(flags)
+	vacation, err := svc.Users.Settings.GetVacation(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -128,7 +129,8 @@ func (c *GmailVacationUpdateCmd) Run(ctx context.Context, kctx *kong.Context, fl
 	}
 
 	// Get current settings first
-	current, err := svc.Users.Settings.GetVacation("me").Do()
+	userID := gmailUserID(flags)
+	current, err := svc.Users.Settings.GetVacation(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -182,7 +184,7 @@ func (c *GmailVacationUpdateCmd) Run(ctx context.Context, kctx *kong.Context, fl
 		vacation.RestrictToDomain = c.DomainOnly
 	}
 
-	updated, err := svc.Users.Settings.UpdateVacation("me", vacation).Do()
+	updated, err := svc.Users.Settings.UpdateVacation(userID, vacation).Do()
 	if err != nil {
 		return err
 	}

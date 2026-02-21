@@ -40,6 +40,8 @@ type RootFlags struct {
 	Force          bool   `help:"Skip confirmations for destructive commands" aliases:"yes,assume-yes" short:"y"`
 	NoInput        bool   `help:"Never prompt; fail instead (useful for CI)" aliases:"non-interactive,noninteractive"`
 	Verbose        bool   `help:"Enable verbose logging" short:"v"`
+	// Gmail delegation: act as another user (requires delegate access granted in Gmail settings).
+	GmailAs string `name:"as" aliases:"delegate" help:"Gmail: act as this user (delegate/impersonation access). Defaults to authenticated user." optional:""`
 }
 
 type CLI struct {
@@ -254,7 +256,7 @@ func isCalendarEventsCommand(args []string) bool {
 
 func globalFlagTakesValue(flag string) bool {
 	switch flag {
-	case "--color", "--account", "--acct", "--client", "--enable-commands", "--select", "--pick", "--project", "-a":
+	case "--color", "--account", "--acct", "--client", "--enable-commands", "--select", "--pick", "--project", "-a", "--as", "--delegate":
 		return true
 	default:
 		return false

@@ -47,11 +47,11 @@ func formatUnixMillis(ms int64) string {
 	return time.UnixMilli(ms).Format(time.RFC3339)
 }
 
-func resolveLabelIDsWithService(svc *gmail.Service, labels []string) ([]string, error) {
+func resolveLabelIDsWithService(svc *gmail.Service, labels []string, userID string) ([]string, error) {
 	if len(labels) == 0 {
 		return nil, nil
 	}
-	nameToID, err := fetchLabelNameToID(svc)
+	nameToID, err := fetchLabelNameToID(svc, userID)
 	if err != nil {
 		return nil, err
 	}

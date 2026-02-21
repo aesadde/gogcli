@@ -30,8 +30,8 @@ func resolveLabelIDs(labels []string, nameToID map[string]string) []string {
 	return out
 }
 
-func ensureLabelNameAvailable(svc *gmail.Service, name string) error {
-	idMap, err := fetchLabelNameToID(svc)
+func ensureLabelNameAvailable(svc *gmail.Service, userID, name string) error {
+	idMap, err := fetchLabelNameToID(svc, userID)
 	if err != nil {
 		return err
 	}

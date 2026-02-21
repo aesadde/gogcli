@@ -31,7 +31,8 @@ func (c *GmailAutoForwardGetCmd) Run(ctx context.Context, flags *RootFlags) erro
 		return err
 	}
 
-	autoForward, err := svc.Users.Settings.GetAutoForwarding("me").Do()
+	userID := gmailUserID(flags)
+	autoForward, err := svc.Users.Settings.GetAutoForwarding(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -103,8 +104,9 @@ func (c *GmailAutoForwardUpdateCmd) Run(ctx context.Context, kctx *kong.Context,
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	// Get current settings first
-	current, err := svc.Users.Settings.GetAutoForwarding("me").Do()
+	current, err := svc.Users.Settings.GetAutoForwarding(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -130,7 +132,7 @@ func (c *GmailAutoForwardUpdateCmd) Run(ctx context.Context, kctx *kong.Context,
 		autoForward.Disposition = c.Disposition
 	}
 
-	updated, err := svc.Users.Settings.UpdateAutoForwarding("me", autoForward).Do()
+	updated, err := svc.Users.Settings.UpdateAutoForwarding(userID, autoForward).Do()
 	if err != nil {
 		return err
 	}

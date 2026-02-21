@@ -88,7 +88,7 @@ func TestGmailThreadHelpers_Misc(t *testing.T) {
 }
 
 func TestDownloadAttachment_ErrorsAndSafeFilename(t *testing.T) {
-	if _, _, err := downloadAttachment(context.Background(), nil, "", attachmentInfo{AttachmentID: "a"}, "."); err == nil {
+	if _, _, err := downloadAttachment(context.Background(), nil, "", attachmentInfo{AttachmentID: "a"}, ".", "me"); err == nil {
 		t.Fatalf("expected missing messageID error")
 	}
 
@@ -103,7 +103,7 @@ func TestDownloadAttachment_ErrorsAndSafeFilename(t *testing.T) {
 	if err := os.WriteFile(expectedPath, []byte("data"), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
-	path, cached, err := downloadAttachment(context.Background(), nil, "m1", att, dir)
+	path, cached, err := downloadAttachment(context.Background(), nil, "m1", att, dir, "me")
 	if err != nil {
 		t.Fatalf("downloadAttachment: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestDownloadAttachment_ServiceError(t *testing.T) {
 		Size:         1,
 		AttachmentID: "att1",
 	}
-	if _, _, err := downloadAttachment(context.Background(), svc, "m1", att, t.TempDir()); err == nil {
+	if _, _, err := downloadAttachment(context.Background(), svc, "m1", att, t.TempDir(), "me"); err == nil {
 		t.Fatalf("expected error")
 	}
 }

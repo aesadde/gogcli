@@ -67,6 +67,7 @@ func (c *GmailAttachmentCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	dest, err = resolveAttachmentDest(messageID, attachmentID, c.Output.Path, c.Name, true)
 	if err != nil {
 		return err
@@ -81,9 +82,9 @@ func (c *GmailAttachmentCmd) Run(ctx context.Context, flags *RootFlags) error {
 	expectedSize := int64(-1)
 	if st, statErr := os.Stat(dest.Path); statErr == nil && st.Mode().IsRegular() {
 		// Only hit messages.get when we might have a cache-hit candidate.
-		expectedSize = lookupAttachmentSizeEstimate(ctx, svc, messageID, attachmentID)
+		expectedSize = lookupAttachmentSizeEstimate(ctx, svc, messageID, attachmentID, userID)
 	}
-	path, cached, bytes, err := downloadAttachmentToPath(ctx, svc, messageID, attachmentID, dest.Path, expectedSize)
+	path, cached, bytes, err := downloadAttachmentToPath(ctx, svc, messageID, attachmentID, dest.Path, expectedSize, userID)
 	if err != nil {
 		return err
 	}
@@ -156,11 +157,11 @@ func sanitizeAttachmentFilename(name, fallback string) string {
 	return safeFilename
 }
 
-func lookupAttachmentSizeEstimate(ctx context.Context, svc *gmail.Service, messageID, attachmentID string) int64 {
+func lookupAttachmentSizeEstimate(ctx context.Context, svc *gmail.Service, messageID, attachmentID, userID string) int64 {
 	if svc == nil {
 		return -1
 	}
-	msg, err := svc.Users.Messages.Get("me", messageID).Format("full").Fields("payload").Context(ctx).Do()
+	msg, err := svc.Users.Messages.Get(userID, messageID).Format("full").Fields("payload").Context(ctx).Do()
 	if err != nil || msg == nil {
 		return -1
 	}
@@ -179,6 +180,7 @@ func downloadAttachmentToPath(
 	attachmentID string,
 	outPath string,
 	expectedSize int64,
+	userID string,
 ) (string, bool, int64, error) {
 	if strings.TrimSpace(outPath) == "" {
 		return "", false, 0, errors.New("missing outPath")
@@ -192,7 +194,7 @@ func downloadAttachmentToPath(
 		return outPath, true, cachedSize, nil
 	}
 
-	data, err := fetchAttachmentBytes(ctx, svc, messageID, attachmentID)
+	data, err := fetchAttachmentBytes(ctx, svc, messageID, attachmentID, userID)
 	if err != nil {
 		return "", false, 0, err
 	}
@@ -222,12 +224,12 @@ func cachedRegularFile(outPath string, expectedSize int64) (cached bool, size in
 	return false, 0, nil
 }
 
-func fetchAttachmentBytes(ctx context.Context, svc *gmail.Service, messageID, attachmentID string) ([]byte, error) {
+func fetchAttachmentBytes(ctx context.Context, svc *gmail.Service, messageID, attachmentID, userID string) ([]byte, error) {
 	if svc == nil {
 		return nil, errors.New("missing gmail service")
 	}
 
-	body, err := svc.Users.Messages.Attachments.Get("me", messageID, attachmentID).Context(ctx).Do()
+	body, err := svc.Users.Messages.Attachments.Get(userID, messageID, attachmentID).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}

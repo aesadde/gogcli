@@ -40,7 +40,8 @@ func (c *GmailSendAsListCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	resp, err := svc.Users.Settings.SendAs.List("me").Do()
+	userID := gmailUserID(flags)
+	resp, err := svc.Users.Settings.SendAs.List(userID).Do()
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,8 @@ func (c *GmailSendAsGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	sa, err := svc.Users.Settings.SendAs.Get("me", sendAsEmail).Do()
+	userID := gmailUserID(flags)
+	sa, err := svc.Users.Settings.SendAs.Get(userID, sendAsEmail).Do()
 	if err != nil {
 		return err
 	}
@@ -155,7 +157,8 @@ func (c *GmailSendAsCreateCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	created, err := svc.Users.Settings.SendAs.Create("me", sendAs).Do()
+	userID := gmailUserID(flags)
+	created, err := svc.Users.Settings.SendAs.Create(userID, sendAs).Do()
 	if err != nil {
 		return err
 	}
@@ -197,7 +200,8 @@ func (c *GmailSendAsVerifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	err = svc.Users.Settings.SendAs.Verify("me", sendAsEmail).Do()
+	userID := gmailUserID(flags)
+	err = svc.Users.Settings.SendAs.Verify(userID, sendAsEmail).Do()
 	if err != nil {
 		return err
 	}
@@ -238,7 +242,8 @@ func (c *GmailSendAsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
-	err = svc.Users.Settings.SendAs.Delete("me", sendAsEmail).Do()
+	userID := gmailUserID(flags)
+	err = svc.Users.Settings.SendAs.Delete(userID, sendAsEmail).Do()
 	if err != nil {
 		return err
 	}
@@ -305,7 +310,8 @@ func (c *GmailSendAsUpdateCmd) Run(ctx context.Context, kctx *kong.Context, flag
 	}
 
 	// Get current settings first
-	current, err := svc.Users.Settings.SendAs.Get("me", sendAsEmail).Do()
+	userID := gmailUserID(flags)
+	current, err := svc.Users.Settings.SendAs.Get(userID, sendAsEmail).Do()
 	if err != nil {
 		return err
 	}
@@ -327,7 +333,7 @@ func (c *GmailSendAsUpdateCmd) Run(ctx context.Context, kctx *kong.Context, flag
 		current.IsDefault = c.MakeDefault
 	}
 
-	updated, err := svc.Users.Settings.SendAs.Update("me", sendAsEmail, current).Do()
+	updated, err := svc.Users.Settings.SendAs.Update(userID, sendAsEmail, current).Do()
 	if err != nil {
 		return err
 	}

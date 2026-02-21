@@ -340,7 +340,7 @@ func TestDownloadAttachment_Cached(t *testing.T) {
 		AttachmentID: attachmentID,
 		Size:         3,
 	}
-	gotPath, cached, err := downloadAttachment(context.Background(), nil, messageID, info, dir)
+	gotPath, cached, err := downloadAttachment(context.Background(), nil, messageID, info, dir, "me")
 	if err != nil {
 		t.Fatalf("downloadAttachment: %v", err)
 	}

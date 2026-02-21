@@ -41,6 +41,7 @@ type gmailWatchState struct {
 
 type gmailWatchServeConfig struct {
 	Account       string
+	UserID        string // Gmail userId for API calls; defaults to "me" if empty
 	Bind          string
 	Port          int
 	Path          string

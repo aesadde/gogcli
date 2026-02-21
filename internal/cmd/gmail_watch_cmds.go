@@ -79,12 +79,13 @@ func (c *GmailWatchStartCmd) Run(ctx context.Context, kctx *kong.Context, flags 
 	if err != nil {
 		return err
 	}
-	labelIDs, err := resolveLabelIDsWithService(svc, c.Labels)
+	userID := gmailUserID(flags)
+	labelIDs, err := resolveLabelIDsWithService(svc, c.Labels, userID)
 	if err != nil {
 		return err
 	}
 
-	resp, err := requestGmailWatch(ctx, svc, c.Topic, labelIDs)
+	resp, err := requestGmailWatch(ctx, svc, c.Topic, labelIDs, userID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +159,8 @@ func (c *GmailWatchRenewCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
-	resp, err := requestGmailWatch(ctx, svc, state.Topic, state.Labels)
+	userID := gmailUserID(flags)
+	resp, err := requestGmailWatch(ctx, svc, state.Topic, state.Labels, userID)
 	if err != nil {
 		return err
 	}
@@ -198,7 +200,8 @@ func (c *GmailWatchStopCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
-	if stopErr := svc.Users.Stop("me").Do(); stopErr != nil {
+	userID := gmailUserID(flags)
+	if stopErr := svc.Users.Stop(userID).Do(); stopErr != nil {
 		return stopErr
 	}
 	store, err := newGmailWatchStore(account)
@@ -314,8 +317,10 @@ func (c *GmailWatchServeCmd) Run(ctx context.Context, kctx *kong.Context, flags 
 		}
 	}
 
+	userID := gmailUserID(flags)
 	cfg := gmailWatchServeConfig{
 		Account:       account,
+		UserID:        userID,
 		Bind:          c.Bind,
 		Port:          c.Port,
 		Path:          c.Path,
@@ -443,12 +448,12 @@ func buildWatchState(account, topic string, labels []string, resp *gmail.WatchRe
 	return state, nil
 }
 
-func requestGmailWatch(ctx context.Context, svc *gmail.Service, topic string, labelIDs []string) (*gmail.WatchResponse, error) {
+func requestGmailWatch(ctx context.Context, svc *gmail.Service, topic string, labelIDs []string, userID string) (*gmail.WatchResponse, error) {
 	req := &gmail.WatchRequest{TopicName: topic}
 	if len(labelIDs) > 0 {
 		req.LabelIds = labelIDs
 	}
-	return svc.Users.Watch("me", req).Context(ctx).Do()
+	return svc.Users.Watch(userID, req).Context(ctx).Do()
 }
 
 func hookFromFlags(url, token string, includeBody bool, maxBytes int, maxBytesChanged bool, allowNoHook bool) (*gmailWatchHook, error) {

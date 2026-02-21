@@ -36,6 +36,15 @@ type gmailWatchServer struct {
 	warnf           func(string, ...any)
 }
 
+// userID returns the Gmail API userId for this watch server.
+// Falls back to "me" (authenticated user) when not configured.
+func (s *gmailWatchServer) userID() string {
+	if uid := strings.TrimSpace(s.cfg.UserID); uid != "" {
+		return uid
+	}
+	return "me"
+}
+
 func (s *gmailWatchServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !pathMatches(s.cfg.Path, r.URL.Path) {
 		w.WriteHeader(http.StatusNotFound)
@@ -177,7 +186,7 @@ func (s *gmailWatchServer) handlePush(ctx context.Context, payload gmailPushPayl
 		return nil, err
 	}
 
-	historyCall := svc.Users.History.List("me").StartHistoryId(startID).MaxResults(s.cfg.HistoryMax)
+	historyCall := svc.Users.History.List(s.userID()).StartHistoryId(startID).MaxResults(s.cfg.HistoryMax)
 	if len(s.cfg.HistoryTypes) > 0 {
 		historyCall.HistoryTypes(s.cfg.HistoryTypes...)
 	}
@@ -231,7 +240,7 @@ func (s *gmailWatchServer) handlePush(ctx context.Context, payload gmailPushPayl
 }
 
 func (s *gmailWatchServer) resyncHistory(ctx context.Context, svc *gmail.Service, historyID string, messageID string) (*gmailHookPayload, error) {
-	list, err := svc.Users.Messages.List("me").MaxResults(s.cfg.ResyncMax).Do()
+	list, err := svc.Users.Messages.List(s.userID()).MaxResults(s.cfg.ResyncMax).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +287,7 @@ func (s *gmailWatchServer) fetchMessages(ctx context.Context, svc *gmail.Service
 		if strings.TrimSpace(id) == "" {
 			continue
 		}
-		msg, err := svc.Users.Messages.Get("me", id).
+		msg, err := svc.Users.Messages.Get(s.userID(), id).
 			Format(format).
 			MetadataHeaders("From", "To", "Subject", "Date").
 			Context(ctx).

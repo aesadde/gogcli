@@ -77,7 +77,8 @@ func (c *GmailThreadGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	thread, err := svc.Users.Threads.Get("me", threadID).Format("full").Context(ctx).Do()
+	userID := gmailUserID(flags)
+	thread, err := svc.Users.Threads.Get(userID, threadID).Format("full").Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func (c *GmailThreadGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 				if msg == nil || msg.Id == "" {
 					continue
 				}
-				downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, collectAttachments(msg.Payload), attachDir)
+				downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, collectAttachments(msg.Payload), attachDir, userID)
 				if err != nil {
 					return err
 				}
@@ -156,7 +157,7 @@ func (c *GmailThreadGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		printAttachmentSection(u.Out(), attachments)
 
 		if c.Download && len(attachments) > 0 {
-			downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, attachments, attachDir)
+			downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, attachments, attachDir, userID)
 			if err != nil {
 				return err
 			}
@@ -212,8 +213,9 @@ func (c *GmailThreadModifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
+	userID := gmailUserID(flags)
 	// Resolve label names to IDs
-	idMap, err := fetchLabelNameToID(svc)
+	idMap, err := fetchLabelNameToID(svc, userID)
 	if err != nil {
 		return err
 	}
@@ -222,7 +224,7 @@ func (c *GmailThreadModifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 	removeIDs := resolveLabelIDs(removeLabels, idMap)
 
 	// Use Gmail's Threads.Modify API
-	_, err = svc.Users.Threads.Modify("me", threadID, &gmail.ModifyThreadRequest{
+	_, err = svc.Users.Threads.Modify(userID, threadID, &gmail.ModifyThreadRequest{
 		AddLabelIds:    addIDs,
 		RemoveLabelIds: removeIDs,
 	}).Context(ctx).Do()
@@ -266,7 +268,8 @@ func (c *GmailThreadAttachmentsCmd) Run(ctx context.Context, flags *RootFlags) e
 		return err
 	}
 
-	thread, err := svc.Users.Threads.Get("me", threadID).Format("full").Context(ctx).Do()
+	userID := gmailUserID(flags)
+	thread, err := svc.Users.Threads.Get(userID, threadID).Format("full").Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -302,7 +305,7 @@ func (c *GmailThreadAttachmentsCmd) Run(ctx context.Context, flags *RootFlags) e
 		}
 		attachments := collectAttachments(msg.Payload)
 		if c.Download {
-			downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, attachments, attachDir)
+			downloads, err := downloadAttachmentOutputs(ctx, svc, msg.Id, attachments, attachDir, userID)
 			if err != nil {
 				return err
 			}
@@ -673,7 +676,7 @@ func decodeBase64URL(s string) (string, error) {
 	return string(b), nil
 }
 
-func downloadAttachment(ctx context.Context, svc *gmail.Service, messageID string, a attachmentInfo, dir string) (string, bool, error) {
+func downloadAttachment(ctx context.Context, svc *gmail.Service, messageID string, a attachmentInfo, dir, userID string) (string, bool, error) {
 	if strings.TrimSpace(messageID) == "" || strings.TrimSpace(a.AttachmentID) == "" {
 		return "", false, errors.New("missing messageID/attachmentID")
 	}
@@ -691,7 +694,7 @@ func downloadAttachment(ctx context.Context, svc *gmail.Service, messageID strin
 	}
 	filename := fmt.Sprintf("%s_%s_%s", messageID, shortID, safeFilename)
 	outPath := filepath.Join(dir, filename)
-	path, cached, _, err := downloadAttachmentToPath(ctx, svc, messageID, a.AttachmentID, outPath, a.Size)
+	path, cached, _, err := downloadAttachmentToPath(ctx, svc, messageID, a.AttachmentID, outPath, a.Size, userID)
 	if err != nil {
 		return "", false, err
 	}

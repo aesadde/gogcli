@@ -50,7 +50,8 @@ func (c *GmailGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 
-	call := svc.Users.Messages.Get("me", messageID).Format(format).Context(ctx)
+	userID := gmailUserID(flags)
+	call := svc.Users.Messages.Get(userID, messageID).Format(format).Context(ctx)
 	if format == gmailFormatMetadata {
 		headerList := splitCSV(c.Headers)
 		if len(headerList) == 0 {

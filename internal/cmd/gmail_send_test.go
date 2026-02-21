@@ -66,7 +66,7 @@ func TestReplyHeaders(t *testing.T) {
 
 	ctx := context.Background()
 
-	inReplyTo, refs, threadID, err := replyHeaders(ctx, svc, "m1")
+	inReplyTo, refs, threadID, err := replyHeaders(ctx, svc, "m1", "me")
 	if err != nil {
 		t.Fatalf("replyHeaders: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestReplyHeaders(t *testing.T) {
 		t.Fatalf("unexpected: inReplyTo=%q refs=%q thread=%q", inReplyTo, refs, threadID)
 	}
 
-	inReplyTo, refs, threadID, err = replyHeaders(ctx, svc, "m2")
+	inReplyTo, refs, threadID, err = replyHeaders(ctx, svc, "m2", "me")
 	if err != nil {
 		t.Fatalf("replyHeaders: %v", err)
 	}
@@ -162,7 +162,7 @@ func TestFetchReplyInfo_ThreadID(t *testing.T) {
 	})
 	defer cleanup()
 
-	info, err := fetchReplyInfo(context.Background(), svc, "", "t1", false)
+	info, err := fetchReplyInfo(context.Background(), svc, "", "t1", false, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo: %v", err)
 	}
@@ -294,7 +294,7 @@ func TestFetchReplyInfo_ThreadID_IncludeBody_FetchesOnlySelectedMessage(t *testi
 	})
 	defer cleanup()
 
-	info, err := fetchReplyInfo(context.Background(), svc, "", "t1", true)
+	info, err := fetchReplyInfo(context.Background(), svc, "", "t1", true, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo: %v", err)
 	}
@@ -1173,7 +1173,7 @@ func TestFetchReplyInfo(t *testing.T) {
 	ctx := context.Background()
 
 	// Test m1: multiple recipients
-	info, err := fetchReplyInfo(ctx, svc, "m1", "", false)
+	info, err := fetchReplyInfo(ctx, svc, "m1", "", false, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo(m1): %v", err)
 	}
@@ -1193,7 +1193,7 @@ func TestFetchReplyInfo(t *testing.T) {
 	}
 
 	// Test m2: sender with display name
-	info, err = fetchReplyInfo(ctx, svc, "m2", "", false)
+	info, err = fetchReplyInfo(ctx, svc, "m2", "", false, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo(m2): %v", err)
 	}
@@ -1202,7 +1202,7 @@ func TestFetchReplyInfo(t *testing.T) {
 	}
 
 	// Test empty message ID
-	info, err = fetchReplyInfo(ctx, svc, "", "", false)
+	info, err = fetchReplyInfo(ctx, svc, "", "", false, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo(''): %v", err)
 	}
@@ -1211,7 +1211,7 @@ func TestFetchReplyInfo(t *testing.T) {
 	}
 
 	// Test m3: message with Reply-To header
-	info, err = fetchReplyInfo(ctx, svc, "m3", "", false)
+	info, err = fetchReplyInfo(ctx, svc, "m3", "", false, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo(m3): %v", err)
 	}

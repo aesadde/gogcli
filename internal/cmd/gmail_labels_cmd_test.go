@@ -546,7 +546,7 @@ func TestFetchLabelIDToName(t *testing.T) {
 		t.Fatalf("NewService: %v", err)
 	}
 
-	m, err := fetchLabelIDToName(svc)
+	m, err := fetchLabelIDToName(svc, "me")
 	if err != nil {
 		t.Fatalf("fetchLabelIDToName: %v", err)
 	}

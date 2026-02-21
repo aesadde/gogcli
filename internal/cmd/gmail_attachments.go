@@ -153,13 +153,13 @@ func printAttachmentSection(p *ui.Printer, attachments []attachmentInfo) {
 	p.Println("")
 }
 
-func downloadAttachmentOutputs(ctx context.Context, svc *gmail.Service, messageID string, attachments []attachmentInfo, dir string) ([]attachmentDownloadOutput, error) {
+func downloadAttachmentOutputs(ctx context.Context, svc *gmail.Service, messageID string, attachments []attachmentInfo, dir, userID string) ([]attachmentDownloadOutput, error) {
 	if len(attachments) == 0 {
 		return nil, nil
 	}
 	out := make([]attachmentDownloadOutput, 0, len(attachments))
 	for _, a := range attachments {
-		outPath, cached, err := downloadAttachment(ctx, svc, messageID, a, dir)
+		outPath, cached, err := downloadAttachment(ctx, svc, messageID, a, dir, userID)
 		if err != nil {
 			return nil, err
 		}

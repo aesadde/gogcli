@@ -19,7 +19,7 @@ import (
 )
 
 func TestDownloadAttachmentToPath_MissingOutPath(t *testing.T) {
-	if _, _, _, err := downloadAttachmentToPath(context.Background(), nil, "m1", "a1", " ", 0); err == nil {
+	if _, _, _, err := downloadAttachmentToPath(context.Background(), nil, "m1", "a1", " ", 0, "me"); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -29,7 +29,7 @@ func TestDownloadAttachmentToPath_CachedBySize(t *testing.T) {
 	if err := os.WriteFile(path, []byte("abc"), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
-	gotPath, cached, bytes, err := downloadAttachmentToPath(context.Background(), nil, "m1", "a1", path, 3)
+	gotPath, cached, bytes, err := downloadAttachmentToPath(context.Background(), nil, "m1", "a1", path, 3, "me")
 	if err != nil {
 		t.Fatalf("downloadAttachmentToPath: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestDownloadAttachmentToPath_ExpectedSizeUnknown_Redownloads(t *testing.T) 
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
 	}
-	gotPath, cached, bytes, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", path, -1)
+	gotPath, cached, bytes, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", path, -1, "me")
 	if err != nil {
 		t.Fatalf("downloadAttachmentToPath: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestDownloadAttachmentToPath_Base64Fallback(t *testing.T) {
 	}
 
 	path := filepath.Join(t.TempDir(), "c.bin")
-	gotPath, cached, bytes, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", path, 0)
+	gotPath, cached, bytes, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", path, 0, "me")
 	if err != nil {
 		t.Fatalf("downloadAttachmentToPath: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestDownloadAttachmentToPath_EmptyData(t *testing.T) {
 	}
 
 	path := filepath.Join(t.TempDir(), "d.bin")
-	if _, _, _, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", path, 0); err == nil {
+	if _, _, _, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", path, 0, "me"); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -125,7 +125,7 @@ func TestDownloadAttachmentToPath_DirectoryNotCacheHit(t *testing.T) {
 		t.Fatalf("NewService: %v", err)
 	}
 
-	if _, _, _, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", dir, -1); err == nil {
+	if _, _, _, err := downloadAttachmentToPath(context.Background(), gsvc, "m1", "a1", dir, -1, "me"); err == nil {
 		t.Fatalf("expected error for directory output path")
 	}
 }

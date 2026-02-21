@@ -89,7 +89,7 @@ func TestFetchReplyInfoFromThread(t *testing.T) {
 	defer cleanup()
 	newGmailService = func(context.Context, string) (*gmail.Service, error) { return svc, nil }
 
-	info, err := fetchReplyInfo(context.Background(), svc, "", "t1", false)
+	info, err := fetchReplyInfo(context.Background(), svc, "", "t1", false, "me")
 	if err != nil {
 		t.Fatalf("fetchReplyInfo: %v", err)
 	}
