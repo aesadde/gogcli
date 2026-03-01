@@ -519,11 +519,11 @@ func TestParseHexColor(t *testing.T) {
 
 func TestParseAddress(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantAddr  *sedAddress
-		wantRest  string
-		wantErr   bool
+		name     string
+		input    string
+		wantAddr *sedAddress
+		wantRest string
+		wantErr  bool
 	}{
 		{"single number", "5d", &sedAddress{Start: 5}, "d", false},
 		{"single dollar", "$d", &sedAddress{Start: -1}, "d", false},
@@ -562,13 +562,13 @@ func TestParseAddress(t *testing.T) {
 
 func TestParseFullExpr_Addressed(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantAddr  *sedAddress
-		wantCmd   byte
-		wantPat   string
-		wantRepl  string
-		wantErr   bool
+		name     string
+		input    string
+		wantAddr *sedAddress
+		wantCmd  byte
+		wantPat  string
+		wantRepl string
+		wantErr  bool
 	}{
 		{"bare delete", "5d", &sedAddress{Start: 5}, 'd', "", "", false},
 		{"range delete", "3,7d", &sedAddress{Start: 3, End: 7, HasRange: true}, 'd', "", "", false},
