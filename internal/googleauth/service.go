@@ -10,21 +10,22 @@ import (
 type Service string
 
 const (
-	ServiceGmail     Service = "gmail"
-	ServiceCalendar  Service = "calendar"
-	ServiceChat      Service = "chat"
-	ServiceClassroom Service = "classroom"
-	ServiceDrive     Service = "drive"
-	ServiceDocs      Service = "docs"
-	ServiceSlides    Service = "slides"
-	ServiceContacts  Service = "contacts"
-	ServiceTasks     Service = "tasks"
-	ServicePeople    Service = "people"
-	ServiceSheets    Service = "sheets"
-	ServiceForms     Service = "forms"
-	ServiceAppScript Service = "appscript"
-	ServiceGroups    Service = "groups"
-	ServiceKeep      Service = "keep"
+	ServiceGmail         Service = "gmail"
+	ServiceCalendar      Service = "calendar"
+	ServiceChat          Service = "chat"
+	ServiceClassroom     Service = "classroom"
+	ServiceDrive         Service = "drive"
+	ServiceDocs          Service = "docs"
+	ServiceSlides        Service = "slides"
+	ServiceContacts      Service = "contacts"
+	ServiceTasks         Service = "tasks"
+	ServicePeople        Service = "people"
+	ServiceSheets        Service = "sheets"
+	ServiceForms         Service = "forms"
+	ServiceAppScript     Service = "appscript"
+	ServiceSearchConsole Service = "searchconsole"
+	ServiceGroups        Service = "groups"
+	ServiceKeep          Service = "keep"
 )
 
 const (
@@ -81,6 +82,7 @@ var serviceOrder = []Service{
 	ServicePeople,
 	ServiceForms,
 	ServiceAppScript,
+	ServiceSearchConsole,
 	ServiceGroups,
 	ServiceKeep,
 }
@@ -199,6 +201,11 @@ var serviceInfoByService = map[Service]serviceInfo{
 		},
 		user: true,
 		apis: []string{"Apps Script API"},
+	},
+	ServiceSearchConsole: {
+		scopes: []string{"https://www.googleapis.com/auth/webmasters"},
+		user:   true,
+		apis:   []string{"Search Console API"},
 	},
 	ServiceGroups: {
 		scopes: []string{"https://www.googleapis.com/auth/cloud-identity.groups.readonly"},
@@ -533,6 +540,11 @@ func scopesForServiceWithOptions(service Service, opts ScopeOptions) ([]string, 
 			}, nil
 		}
 
+		return Scopes(service)
+	case ServiceSearchConsole:
+		if opts.Readonly {
+			return []string{"https://www.googleapis.com/auth/webmasters.readonly"}, nil
+		}
 		return Scopes(service)
 	case ServiceGroups:
 		return Scopes(service)

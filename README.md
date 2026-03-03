@@ -3,7 +3,7 @@
 ![GitHub Repo Banner](https://ghrb.waren.build/banner?header=gogcli%F0%9F%A7%AD&subheader=Google+in+your+terminal&bg=f3f4f6&color=1f2937&support=true)
 <!-- Created with GitHub Repo Banner by Waren Gonzaga: https://ghrb.waren.build -->
 
-Fast, script-friendly CLI for Gmail, Calendar, Chat, Classroom, Drive, Docs, Slides, Sheets, Forms, Apps Script, Contacts, Tasks, People, Groups (Workspace), and Keep (Workspace-only). JSON-first output, multiple accounts, and least-privilege auth built in.
+Fast, script-friendly CLI for Gmail, Calendar, Chat, Classroom, Drive, Docs, Slides, Sheets, Forms, Apps Script, Contacts, Tasks, People, Search Console, Groups (Workspace), and Keep (Workspace-only). JSON-first output, multiple accounts, and least-privilege auth built in.
 
 ## Features
 
@@ -20,6 +20,7 @@ Fast, script-friendly CLI for Gmail, Calendar, Chat, Classroom, Drive, Docs, Sli
 - **Apps Script** - create/get projects, inspect content, and run functions
 - **Docs/Slides** - export to PDF/DOCX/PPTX via Drive (plus create/copy, docs-to-text, and **sedmat** sed-style document editing with Markdown formatting, images, and tables)
 - **People** - access profile information
+- **Search Console** - list verified properties, run Search Analytics queries, and manage sitemaps
 - **Keep (Workspace only)** - list/get/search notes and download attachments (service account + domain-wide delegation)
 - **Groups** - list groups you belong to, view group members (Google Workspace)
 - **Local time** - quick local/UTC time display for scripts and agents
@@ -86,6 +87,7 @@ Before adding an account, create OAuth2 credentials from Google Cloud Console:
    - Google Sheets API: https://console.cloud.google.com/apis/api/sheets.googleapis.com
    - Google Forms API: https://console.cloud.google.com/apis/api/forms.googleapis.com
    - Apps Script API: https://console.cloud.google.com/apis/api/script.googleapis.com
+   - Search Console API: https://console.cloud.google.com/apis/api/searchconsole.googleapis.com
    - Cloud Identity API (Groups): https://console.cloud.google.com/apis/api/cloudidentity.googleapis.com
 3. Configure OAuth consent screen: https://console.cloud.google.com/auth/branding
 4. If your app is in "Testing", add test users: https://console.cloud.google.com/auth/audience
@@ -146,6 +148,14 @@ gog auth add you@gmail.com --services user --remote --step 2 --auth-url 'http://
 ```bash
 export GOG_ACCOUNT=you@gmail.com
 gog gmail labels list
+```
+
+### 5. Search Console quick test
+
+```bash
+gog auth add you@gmail.com --services searchconsole --readonly
+gog searchconsole sites list
+gog searchconsole searchanalytics query sc-domain:example.com --start 2026-02-01 --end 2026-02-29 --dimensions query,page --limit 100 --json
 ```
 
 ## Authentication & Secrets
